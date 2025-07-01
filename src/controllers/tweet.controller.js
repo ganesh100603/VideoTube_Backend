@@ -11,12 +11,14 @@ const createTweet = asyncHandler(async(req,res)=>{
         throw new ApiError(400,"content is required")
     }
 
-    const tweet = await Tweet.create(
+    let tweet = await Tweet.create(
         {
             content,
             owner:req.user?._id
         }
     )
+
+    tweet = await tweet.populate("owner", "username avatar");
 
     if(!tweet){
         throw new ApiError(500,"Failed to create tweet please try again")
@@ -111,7 +113,7 @@ const getUserTweets = asyncHandler(async(req,res)=>{
                     from:"users",
                     localField:"owner",
                     foreignField:"_id",
-                    as:"ownerDetails",
+                    as:"owner",
                     pipeline:[
                         {
                             $project:{
@@ -142,8 +144,8 @@ const getUserTweets = asyncHandler(async(req,res)=>{
                     likesCount:{
                         $size:"$likeDetails"
                     },
-                    ownerDetails:{
-                        $first:"$ownerDetails"
+                    owner:{
+                        $first:"$owner"
                     },
                     isLiked:{
                         $cond:{
@@ -164,7 +166,7 @@ const getUserTweets = asyncHandler(async(req,res)=>{
             {
                 $project:{
                     content:1,
-                    ownerDetails:1,
+                    owner:1,
                     likesCount:1,
                     createdAt:1,
                     isLiked:1
